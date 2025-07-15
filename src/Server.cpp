@@ -52,11 +52,11 @@ int main(int argc, char **argv) {
 
   // Uncomment this block to pass the first stage
   // 
-  accept(server_fd, (struct sockaddr *) &client_addr, (socklen_t *) &client_addr_len);
+  auto client_fd = accept(server_fd, (struct sockaddr *) &client_addr, (socklen_t *) &client_addr_len);
   std::cout << "Client connected\n";
   // 
 
-  send(client_addr, "+PONG\r\n", 7, 0);
+  send(client_fd, "+PONG\r\n", 7, 0);
   close(server_fd);
 
   return 0;
