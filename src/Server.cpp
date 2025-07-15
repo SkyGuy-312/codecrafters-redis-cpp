@@ -56,7 +56,18 @@ int main(int argc, char **argv) {
   std::cout << "Client connected\n";
   // 
 
-  send(client_fd, "+PONG\r\n", 7, 0);
+  char buffer[1024];
+  while (true){
+    auto bytes_received = recv(client_fd, buffer, sizeof(buffer) - 1, 0);
+    if (bytes_received <= 0) {
+      std::cerr << "recv failed\n";
+      break;
+    }
+    send(client_fd, "+PONG\r\n", 7, 0);
+  }
+
+
+  close(client_fd);
   close(server_fd);
 
   return 0;
