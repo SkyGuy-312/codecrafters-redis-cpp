@@ -131,7 +131,7 @@ int main(int argc, char **argv) {
                     pos += data.find("\r\n") + std::string("\r\n").length();
 
                     // get the string itself:
-                    auto str = data.substr(pos+1, std::stoi(len));
+                    auto str = data.substr(pos, std::stoi(len));
                     std::cout << str << "\n";
                     // if (str.length() == std::stoi(len)){
                     //   tokens.push_back(str);
