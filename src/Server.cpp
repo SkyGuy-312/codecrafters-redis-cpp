@@ -9,6 +9,7 @@
 #include <netdb.h>
 #include <sys/epoll.h>
 #include <vector>
+#include <algorithm>
 
 int main(int argc, char **argv) {
   // Flush after every std::cout / std::cerr
@@ -147,6 +148,25 @@ int main(int argc, char **argv) {
                   
                   }
 
+                  // processing commands
+                  if (!tokens.empty()){
+                    std::string command = tokens[0];
+                    
+                    std::transform(command.begin(), command.end(), command.begin(), tolower);
+
+                    if (command == "ECHO" && tokens.size() > 1){
+                      // send the command values back to client
+                      std::string response{};
+                      for (int i = 1; i < tokens.size(); i++){
+                        
+                        response += "$" + std::to_string(tokens[i].length()) + "\r\n" + tokens[i] + "\r\n";
+                        send(events[i].data.fd, response.c_str(), response.size(), 0);
+                      }
+                    }
+                    else if (command == "PING"){
+                      send(events[i].data.fd, PONG.c_str(), PONG.length(), 0);
+                    }
+                  }
                   
                   
                 }
