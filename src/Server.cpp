@@ -8,6 +8,7 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <sys/epoll.h>
+#include <vector>
 
 int main(int argc, char **argv) {
   // Flush after every std::cout / std::cerr
@@ -112,9 +113,13 @@ int main(int argc, char **argv) {
                   //find position of \r\n:
                   auto pos = data.find("\r\n");
                   // read the string until that pos:
-                  auto token = data.substr(0, pos);
-                  //print for debugging:
-                  std::cout << token << "\n";
+                  auto length = data.substr(0, pos);
+                  // create tokens array from it
+                  std::cout << std::stoi(length.substr(1)) << "\n";
+                  // std::vector<std::string> tokens(std::stoi(length.substr(1)));  
+                  //print elements for debugging:
+
+                  
                   
                 }
                 
