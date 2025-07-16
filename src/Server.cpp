@@ -133,17 +133,17 @@ int main(int argc, char **argv) {
                     // get the string itself:
                     auto str = data.substr(pos, std::stoi(len));
                     std::cout << str << "\n";
-                    // if (str.length() == std::stoi(len)){
-                    //   tokens.push_back(str);
-                    // }
-                    // else{
-                    //   std::cerr << "fatal error: input number " << (tokens.size() * 2)-1 << "has invalid length\n";
-                    // }
+                    if (str.length() == std::stoi(len)){
+                      tokens.push_back(str);
+                    }
+                    else{
+                      std::cerr << "fatal error: input number " << (tokens.size() * 2)-1 << "has invalid length\n";
+                    }
                     
-                    // // delete the read data and reset position:
-                    // pos = data.find("\r\n", pos) + std::string("\r\n").length();
-                    // data = data.substr(pos);
-                    // pos = 0;
+                    // delete the read data and reset position:
+                    pos = data.find("\r\n", pos) + std::string("\r\n").length();
+                    data = data.substr(pos);
+                    pos = 0;
                   
                   }
 
