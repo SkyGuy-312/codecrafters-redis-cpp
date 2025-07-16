@@ -9,13 +9,6 @@
 #include <netdb.h>
 #include <sys/epoll.h>
 
-typedef union epoll_data {
-    void *ptr;
-    int fd;
-    uint32_t u32;
-    uint64_t u64;
-  } epoll_data_t;
-
 int main(int argc, char **argv) {
   // Flush after every std::cout / std::cerr
   std::cout << std::unitbuf;
