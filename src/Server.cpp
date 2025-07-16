@@ -110,14 +110,43 @@ int main(int argc, char **argv) {
                   std::cerr << "cannot find size of input, aborting...\n";
                   break;
                 }else{
-                  //find position of \r\n:
+                  // 2. create position index, with getting array input size as first position:
                   auto pos = data.find("\r\n");
-                  // read the string until that pos:
-                  auto length = data.substr(0, pos);
-                  // create tokens array from it
-                  std::cout << std::stoi(length.substr(1)) << "\n";
-                  // std::vector<std::string> tokens(std::stoi(length.substr(1)));  
-                  //print elements for debugging:
+                  if (pos == std::string::npos){
+                    std::cerr << "error parsing upcoming string: invalid string structure\n";
+                  }
+                  
+                  // 3. create tokens array from it
+                  std::vector<std::string> tokens(std::stoi(data.substr(1, pos)));  
+                  
+                  // 4. reset data buffer (we're using it as FIFO)
+                  pos += std::string("\r\n").length();
+                  data = data.substr(pos);
+                  pos = 0;
+                  
+                  // 5. parse the bulk string
+                  while (!data.empty()){
+                    //new bulk string, getting size:
+                    auto len = data.substr(pos+1, data.find("\r\n"));
+                    std::cout << len << "\n";
+                    break;
+                    // pos += data.find("\r\n") + std::string("\r\n").length();
+
+                    // // get the string itself:
+                    // auto str = data.substr(pos+1, data.find("\r\n", pos));
+                    // if (str.length() == std::stoi(len)){
+                    //   tokens.push_back(str);
+                    // }
+                    // else{
+                    //   std::cerr << "fatal error: input number " << (tokens.size() * 2)-1 << "has invalid length\n";
+                    // }
+                    
+                    // // delete the read data and reset position:
+                    // pos = data.find("\r\n", pos) + std::string("\r\n").length();
+                    // data = data.substr(pos);
+                    // pos = 0;
+                  
+                  }
 
                   
                   
