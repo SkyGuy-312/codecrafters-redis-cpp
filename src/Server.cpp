@@ -128,12 +128,11 @@ int main(int argc, char **argv) {
                   while (!data.empty()){
                     //new bulk string, getting size:
                     auto len = data.substr(pos+1, data.find("\r\n"));
-                    std::cout << len << "\n";
-                    break;
-                    // pos += data.find("\r\n") + std::string("\r\n").length();
+                    pos += data.find("\r\n") + std::string("\r\n").length();
 
-                    // // get the string itself:
-                    // auto str = data.substr(pos+1, data.find("\r\n", pos));
+                    // get the string itself:
+                    auto str = data.substr(pos+1, std::stoi(len));
+                    std::cout << str << "\n";
                     // if (str.length() == std::stoi(len)){
                     //   tokens.push_back(str);
                     // }
