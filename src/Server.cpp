@@ -101,7 +101,24 @@ int main(int argc, char **argv) {
                 epoll_ctl(epoll_fd, EPOLL_CTL_DEL, events[i].data.fd, nullptr);
                 close(events[i].data.fd); break;
               default:
-                send(events[i].data.fd, PONG.c_str(), PONG.length(), 0);
+                bool abort_flag {};
+                // start RESP parsing:
+                // 1. convert byte buffer to string
+                std::string data(buffer, num_bytes);
+                if (data[0] != '*'){
+                  std::cerr << "cannot find size of input, aborting...\n";
+                  break;
+                }else{
+                  //find position of \r\n:
+                  auto pos = data.find("\r\n");
+                  // read the string until that pos:
+                  auto token = data.substr(0, pos);
+                  //print for debugging:
+                  std::cout << token << "\n";
+                  
+                }
+                
+
             }
           }
         }
