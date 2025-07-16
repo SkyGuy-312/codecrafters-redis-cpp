@@ -7,6 +7,14 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <netdb.h>
+#include <sys/epoll.h>
+
+typedef union epoll_data {
+    void *ptr;
+    int fd;
+    uint32_t u32;
+    uint64_t u64;
+  } epoll_data_t;
 
 int main(int argc, char **argv) {
   // Flush after every std::cout / std::cerr
@@ -47,27 +55,66 @@ int main(int argc, char **argv) {
   int client_addr_len = sizeof(client_addr);
   std::cout << "Waiting for a client to connect...\n";
 
-  // You can use print statements as follows for debugging, they'll be visible when running tests.
-  std::cout << "Logs from your program will appear here!\n";
-
-  // Uncomment this block to pass the first stage
-  // 
-  auto client_fd = accept(server_fd, (struct sockaddr *) &client_addr, (socklen_t *) &client_addr_len);
-  std::cout << "Client connected\n";
-  // 
-
-  char buffer[1024];
-  while (true){
-    auto bytes_received = recv(client_fd, buffer, sizeof(buffer) - 1, 0);
-    if (bytes_received <= 0) {
-      std::cerr << "recv failed\n";
-      break;
-    }
-    send(client_fd, "+PONG\r\n", 7, 0);
+  int epoll_fd = epoll_create1(0);
+  if (epoll_fd < 0) {
+    std::cerr << "Failed to create epoll instance\n";
+    close(server_fd);
+    return 1;
   }
 
+  epoll_event event;
+  event.data.fd = server_fd;
+  event.events = EPOLLIN;
 
-  close(client_fd);
+  epoll_ctl(epoll_fd, EPOLL_CTL_ADD, server_fd, &event);
+
+  constexpr int EVENTS_BUFFER_SIZE {10};
+  epoll_event events[EVENTS_BUFFER_SIZE];
+
+  constexpr int DATA_BUFFER_SIZE{1024};
+  char buffer [DATA_BUFFER_SIZE];
+
+  std::string PONG {"+PONG\r\n"};
+  
+  while (true){
+    int event_nums = epoll_wait(epoll_fd, events, EVENTS_BUFFER_SIZE, -1);
+    switch (event_nums){
+      case 0:
+        std::cerr << "timeout occrred\n"; break;
+      case -1:
+        std::cerr << "error occurred\n"; break;
+      default:
+        // loop through the events:
+        for (int i {0}; i < event_nums; i++){
+          if (events[i].data.fd == server_fd){
+            auto client_fd = accept(server_fd, reinterpret_cast<sockaddr*> (&client_addr), reinterpret_cast<socklen_t*>(&client_addr_len));
+            switch (client_fd){
+              case -1:
+                std::cerr << "client wasn't accepted\n"; break;
+              default:
+                epoll_event client_event;
+                client_event.data.fd = client_fd;
+                client_event.events = EPOLLIN;
+                epoll_ctl(epoll_fd, EPOLL_CTL_ADD, client_fd, &client_event);
+                break;
+            }
+          }else{
+            int num_bytes = recv(events[i].data.fd, buffer, DATA_BUFFER_SIZE, 0);
+            switch (num_bytes){
+              case -1:
+                std::cerr << "error occurred while recieving data from client\n";break;
+              case 0:
+                std::cerr << "client disconnected\n"; 
+                epoll_ctl(epoll_fd, EPOLL_CTL_DEL, events[i].data.fd, nullptr);
+                close(events[i].data.fd); break;
+              default:
+                send(events[i].data.fd, PONG.c_str(), PONG.length(), 0);
+            }
+          }
+        }
+    }
+  }  
+
   close(server_fd);
 
   return 0;
