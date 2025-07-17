@@ -149,10 +149,16 @@ int main(int argc, char **argv) {
                   
                   }
 
+                  std::cout << "Tokens: [";
+                  for (size_t t = 0; t < tokens.size(); ++t) {
+                    std::cout << "\"" << tokens[t] << "\"";
+                    if (t != tokens.size() - 1) std::cout << ", ";
+                  }
+                  std::cout << "]\n";
+                  
                   // processing commands
                   if (!tokens.empty()){
                     std::string command = tokens[0];
-                    std::cout << tokens.size();
                     std::transform(command.begin(), command.end(), command.begin(), ::tolower);
 
                     if (command == "echo" && tokens.size() > 1){
