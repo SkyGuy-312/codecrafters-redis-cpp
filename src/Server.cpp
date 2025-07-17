@@ -134,7 +134,8 @@ int main(int argc, char **argv) {
                   pos = 0;
                   
                   // 5. parse the bulk string
-                  while (!data.empty()){
+                  int idx = 0;
+                  while ((!data.empty() && idx < data.size())){
                     //new bulk string, getting size:
                     auto len = data.substr(pos+1, data.find("\r\n"));
                     pos += data.find("\r\n") + std::string("\r\n").length();
@@ -143,7 +144,8 @@ int main(int argc, char **argv) {
                     auto str = data.substr(pos, std::stoi(len));
                     std::cout << str << "\n";
                     if (str.length() == std::stoi(len)){
-                      tokens.push_back(str);
+                      tokens[idx] = str;
+                      idx++;
                     }
                     else{
                       std::cerr << "fatal error: input number " << (tokens.size() * 2)-1 << "has invalid length\n";
