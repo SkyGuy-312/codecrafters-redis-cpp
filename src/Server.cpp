@@ -152,7 +152,7 @@ int main(int argc, char **argv) {
                   // processing commands
                   if (!tokens.empty()){
                     std::string command = tokens[0];
-                    std::cout << "in tokens\n";
+                    std::cout << tokens.size();
                     std::transform(command.begin(), command.end(), command.begin(), ::tolower);
 
                     if (command == "echo" && tokens.size() > 1){
