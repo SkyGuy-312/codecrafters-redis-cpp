@@ -10,6 +10,7 @@
 #include <sys/epoll.h>
 #include <vector>
 #include <algorithm>
+#include <cctype>
 
 int main(int argc, char **argv) {
   // Flush after every std::cout / std::cerr
