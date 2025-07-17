@@ -153,7 +153,7 @@ int main(int argc, char **argv) {
                   if (!tokens.empty()){
                     std::string command = tokens[0];
                     
-                    std::transform(command.begin(), command.end(), command.begin(), tolower);
+                    std::transform(command.begin(), command.end(), command.begin(), ::tolower);
 
                     if (command == "echo" && tokens.size() > 1){
                       // send the command values back to client
