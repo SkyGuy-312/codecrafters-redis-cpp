@@ -157,7 +157,7 @@ int main(int argc, char **argv) {
                     if (command == "ECHO" && tokens.size() > 1){
                       // send the command values back to client
                       std::string response{};
-                      for (int i = 1; i < tokens.size(); i++){
+                      for (int j = 1; j < tokens.size(); j++){
                         
                         response += "$" + std::to_string(tokens[i].length()) + "\r\n" + tokens[i] + "\r\n";
                         send(events[i].data.fd, response.c_str(), response.size(), 0);
