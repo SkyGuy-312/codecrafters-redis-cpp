@@ -161,6 +161,8 @@ int main(int argc, char **argv) {
                       for (int j = 1; j < tokens.size(); j++){
                         
                         response += "$" + std::to_string(tokens[j].length()) + "\r\n" + tokens[j] + "\r\n";
+
+                        std::cout << response << "\n";
                       }
                       send(events[i].data.fd, response.c_str(), response.size(), 0);
                     }
