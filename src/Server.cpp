@@ -155,7 +155,7 @@ int main(int argc, char **argv) {
                     
                     std::transform(command.begin(), command.end(), command.begin(), tolower);
 
-                    if (command == "ECHO" && tokens.size() > 1){
+                    if (command == "echo" && tokens.size() > 1){
                       // send the command values back to client
                       std::string response{};
                       for (int j = 1; j < tokens.size(); j++){
