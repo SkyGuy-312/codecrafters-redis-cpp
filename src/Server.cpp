@@ -121,6 +121,13 @@ int main(int argc, char **argv) {
                   // 3. create tokens array from it
                   std::vector<std::string> tokens(std::stoi(data.substr(1, pos)));  
                   
+                  std::cout << "Tokens: [";
+                  for (size_t t = 0; t < tokens.size(); ++t) {
+                    std::cout << "\"" << tokens[t] << "\"";
+                    if (t != tokens.size() - 1) std::cout << ", ";
+                  }
+                  std::cout << "]\n";
+
                   // 4. reset data buffer (we're using it as FIFO)
                   pos += std::string("\r\n").length();
                   data = data.substr(pos);
@@ -155,7 +162,7 @@ int main(int argc, char **argv) {
                     if (t != tokens.size() - 1) std::cout << ", ";
                   }
                   std::cout << "]\n";
-                  
+
                   // processing commands
                   if (!tokens.empty()){
                     std::string command = tokens[0];
