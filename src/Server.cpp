@@ -152,7 +152,7 @@ int main(int argc, char **argv) {
                   // processing commands
                   if (!tokens.empty()){
                     std::string command = tokens[0];
-                    
+                    std::cout << "in tokens\n";
                     std::transform(command.begin(), command.end(), command.begin(), ::tolower);
 
                     if (command == "echo" && tokens.size() > 1){
@@ -166,7 +166,7 @@ int main(int argc, char **argv) {
                       }
                       send(events[i].data.fd, response.c_str(), response.size(), 0);
                     }
-                    else if (command == "PING"){
+                    else if (command == "ping"){
                       send(events[i].data.fd, PONG.c_str(), PONG.length(), 0);
                     }
                   }
