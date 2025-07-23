@@ -17,16 +17,35 @@ std::string CommandHandler::executeCommand(std::vector<std::string>& tokens_vect
     std::transform (command.begin(), command.end(), command.begin(), [](char c){
         return std::toupper(c);
     });
-    #if 1
+    #if 0
     std::cout << command << std::endl;
     #endif
     //execute the command
     if (command == "SET"){
-        if (tokens_vector.size() <= 1){
+        if ((tokens_vector.size() != 3) && (tokens_vector.size() != 5)){
             return "$-1\r\n";
         }
-        this->storage.setVariable(tokens_vector[1],tokens_vector[2]);
-        return "+OK\r\n";
+        if (tokens_vector.size() == 5){
+            auto sub_command = tokens_vector[3];
+            std::transform(sub_command.begin(), sub_command.end(),
+             sub_command.begin(), [](char c) { return std::toupper(c);});
+
+             if (sub_command == "PX"){
+                auto time_ms = std::stoll(tokens_vector[4]);
+                this->storage.setVariable(tokens_vector[1], tokens_vector[2], static_cast<std::chrono::milliseconds>(time_ms));
+                return "+OK\r\n";
+             }
+             else{
+                std::cerr << "Error Executing Command: invalud sub-command" << std::endl;
+                return "$-1\r\n";
+             }
+
+        }
+        else if (tokens_vector.size() == 3){
+            this->storage.setVariable(tokens_vector[1],tokens_vector[2]);
+            return "+OK\r\n";
+        }
+        return "$-1\r\n";
     }
     else if(command == "GET"){
         if (tokens_vector.size() <= 1){

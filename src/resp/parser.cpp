@@ -85,7 +85,7 @@ std::vector<std::string> RespParser::dataParser(char data_buffer[], int data_siz
             pos += str_len_int + std::string("\r\n").length();
         }
 
-#if 1
+#if 0
         std::cout << "Tokens: [";
         for (size_t t = 0; t < tokens.size(); ++t)
         {

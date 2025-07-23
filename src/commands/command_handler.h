@@ -6,12 +6,6 @@
 class CommandHandler{
     private:
     InMemoryStore& storage;
-    std::array<std::string, 4> commands = {
-        "PING",
-        "ECHO",
-        "SET",
-        "GET"
-    };
 
     public:
     CommandHandler (InMemoryStore& store);
