@@ -1,6 +1,7 @@
 #pragma once
 #include "storage/in_memory_store.h"
 #include "commands/command_handler.h"
+#include "config/server_config.h"
 #include <arpa/inet.h>
 #include <sys/epoll.h>
 #include <string>
@@ -56,7 +57,7 @@ class RedisServer{
     RedisServerEpollErrors epoll_error{};
     RedisServerClientErrors client_error{};
 
-    RedisServer(int port_number);
+    RedisServer(int port_number,const ServerConfig& rdb_fd);
     ~RedisServer();
     bool initialize();
     bool run ();

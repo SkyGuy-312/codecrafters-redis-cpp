@@ -1,4 +1,5 @@
 #include <iostream>
+#include "config/server_config.h"
 #include "RedisServer.h"
 
 int main(int argc, char **argv) {
@@ -6,7 +7,9 @@ int main(int argc, char **argv) {
   std::cout << std::unitbuf;
   std::cerr << std::unitbuf;
   
-  RedisServer server(6379);
+  ServerConfig server_config(argc, argv);
+
+  RedisServer server(6379, server_config);
 
   if(server.initialize()){
     server.run();

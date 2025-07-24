@@ -1,7 +1,7 @@
 #include "command_handler.h"
 #include <iostream>
 #include <algorithm>
-CommandHandler::CommandHandler(InMemoryStore &store):storage(store)
+CommandHandler::CommandHandler(InMemoryStore& store,const ServerConfig& config):storage(store), rdb_fd(config)
 {
 }
 
@@ -71,6 +71,29 @@ std::string CommandHandler::executeCommand(std::vector<std::string>& tokens_vect
     }
     else if(command == "COMMAND"){
         return "+OK\r\n";
+    }
+    else if(command == "CONFIG"){
+        auto sub_command = tokens_vector[1];
+        std::transform(sub_command.begin(), sub_command.end(),
+            sub_command.begin(), [](char c) { return std::toupper(c);});
+        if (sub_command == "GET"){
+            if (tokens_vector.size() <= 2){
+                return "$-1\r\n";
+            }
+            if (tokens_vector[2] == "dir"){
+                return "*2\r\n" + static_cast<std::string>("$3\r\n") + "dir\r\n" + "$" + std::to_string(this->rdb_fd.dir.size()) + "\r\n" + this->rdb_fd.dir + "\r\n";
+            }
+            else if (tokens_vector[2] == "dbfilename"){
+                return "*2\r\n" + static_cast<std::string>("$10\r\n") + "dbfilename\r\n" + "$" + std::to_string(this->rdb_fd.dbfilename.size()) + "\r\n" + this->rdb_fd.dbfilename + "\r\n"; 
+            }
+            else {
+                return "$-1\r\n";
+            }
+            
+        }
+        else{
+            return "$-1\r\n";
+        }
     }
     else{
         std::cerr << "Error executing command: invalid command" << std::endl;

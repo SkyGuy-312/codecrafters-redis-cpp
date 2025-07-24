@@ -7,7 +7,7 @@
 #include <algorithm>
 #include <unordered_map>
 
-RedisServer::RedisServer(int port_number):command_handler(this->storage)
+RedisServer::RedisServer(int port_number,const ServerConfig& rdb_fd):command_handler(this->storage, rdb_fd)
 {
     this->server_port = port_number;
     this->server_fd = -1;
