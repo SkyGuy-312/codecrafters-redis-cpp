@@ -58,7 +58,7 @@ class RDBParser{
 
     static constexpr int HEADER_SIZE = 9;
     static constexpr int SELECT_DB_SIZE = 2;
-    const std::string header = "REDIS0009";
+    const std::string header = "REDIS0011";
     RDBParserErrors error = RDBParserErrors::RDB_PARSER_NO_ERROR;
     InMemoryStore& storage;
     uint64_t pair_counts_left;
