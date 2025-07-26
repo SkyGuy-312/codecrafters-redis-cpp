@@ -6,15 +6,23 @@
 #include <cerrno>
 #include <algorithm>
 #include <unordered_map>
+#include "rdb/rdb_parser.h"
+#include <filesystem>
 
-RedisServer::RedisServer(int port_number,const ServerConfig& rdb_fd):command_handler(this->storage, rdb_fd)
+RedisServer::RedisServer(int port_number,const ServerConfig& rdb_fd):command_handler(this->storage, rdb_fd), rdb_parser(this->storage)
 {
+    using namespace std::filesystem;
     this->server_port = port_number;
     this->server_fd = -1;
     this->epoll_fd = -1;
     this->socket_error = RedisServerSocketErrors::server_no_error;
     this->epoll_error = RedisServerEpollErrors::epoll_no_error;
     this->client_error = RedisServerClientErrors::client_no_error;
+
+    path full_path = path(rdb_fd.dir)/rdb_fd.dbfilename;
+    std::cout << full_path.string() << std::endl;
+    rdb_parser.parse(full_path.string());
+
 }
 
 bool RedisServer::initialize()
@@ -43,7 +51,7 @@ bool RedisServer::initialize()
 
     if (bind(this->server_fd, (struct sockaddr *)&this->server_address, sizeof(this->server_address)) != 0)
     {
-        std::cerr << "Failed to bind to port 6379\n";
+        std::cerr << "Failed to bind to port " << this->server_port << std::endl;
         this->socket_error = RedisServerSocketErrors::server_port_binding_error;
         close(this->server_fd);
         return false;

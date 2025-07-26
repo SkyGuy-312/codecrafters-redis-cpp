@@ -3,6 +3,7 @@
 #include <unordered_map>
 #include <optional>
 #include <chrono>
+#include <vector>
 class InMemoryStore{
     private:
     struct StoreValue
@@ -17,5 +18,7 @@ class InMemoryStore{
     public:
     void setVariable(const std::string& key, const std::string& value);
     void setVariable(const std::string& key, const std::string& value, const std::chrono::milliseconds time_ms);
+    std::vector<std::string> getAllVariables()const;
+    void resize(int size);
     std::optional<std::string> getVariable (const std::string& key)const;
 };

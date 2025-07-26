@@ -2,6 +2,7 @@
 #include "storage/in_memory_store.h"
 #include "commands/command_handler.h"
 #include "config/server_config.h"
+#include "rdb/rdb_parser.h"
 #include <arpa/inet.h>
 #include <sys/epoll.h>
 #include <string>
@@ -38,6 +39,7 @@ class RedisServer{
 
     InMemoryStore storage;
     CommandHandler command_handler;
+    RDBParser rdb_parser;
 
     sockaddr_in server_address{};    
     epoll_event server_event{};

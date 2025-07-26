@@ -10,6 +10,20 @@ void InMemoryStore::setVariable(const std::string &key, const std::string &value
     this->map[key] = {value, time_ms+std::chrono::steady_clock::now()};
 }
 
+std::vector<std::string> InMemoryStore::getAllVariables() const
+{   
+    std::vector <std::string> keys{};
+    for (const auto& pair : this->map){
+        keys.push_back(pair.first);
+    }
+    return keys;
+}
+
+void InMemoryStore::resize(int size)
+{
+    this->map.reserve(size);
+}
+
 std::optional<std::string> InMemoryStore::getVariable(const std::string &key) const
 {
     auto var = map.find(key);
