@@ -19,10 +19,11 @@ RedisServer::RedisServer(int port_number,const ServerConfig& rdb_fd):command_han
     this->epoll_error = RedisServerEpollErrors::epoll_no_error;
     this->client_error = RedisServerClientErrors::client_no_error;
 
-    path full_path = path(rdb_fd.dir)/rdb_fd.dbfilename;
-    std::cout << full_path.string() << std::endl;
-    rdb_parser.parse("."+full_path.string());
-
+    if (!rdb_fd.dir.empty() && !rdb_fd.dbfilename.empty()) {
+        path full_path = path(rdb_fd.dir)/rdb_fd.dbfilename;
+        std::cout << full_path.string() << std::endl;
+        rdb_parser.parse(full_path.string());
+    }
 }
 
 bool RedisServer::initialize()
