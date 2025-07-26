@@ -9,7 +9,7 @@ int main(int argc, char **argv) {
   
   ServerConfig server_config(argc, argv);
 
-  RedisServer server(6370, server_config);
+  RedisServer server(6379, server_config);
 
   if(server.initialize()){
     server.run();
