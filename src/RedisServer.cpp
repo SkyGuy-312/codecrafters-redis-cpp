@@ -21,7 +21,7 @@ RedisServer::RedisServer(int port_number,const ServerConfig& rdb_fd):command_han
 
     path full_path = path(rdb_fd.dir)/rdb_fd.dbfilename;
     std::cout << full_path.string() << std::endl;
-    rdb_parser.parse(full_path.string());
+    rdb_parser.parse("."+full_path.string());
 
 }
 
