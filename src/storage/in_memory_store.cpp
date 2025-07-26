@@ -7,7 +7,7 @@ void InMemoryStore::setVariable(const std::string &key, const std::string &value
 
 void InMemoryStore::setVariable(const std::string &key, const std::string &value, const std::chrono::milliseconds time_ms)
 {
-    this->map[key] = {value, time_ms+std::chrono::steady_clock::now()};
+    this->map[key] = {value, std::chrono::time_point<std::chrono::system_clock>(time_ms)};
 }
 
 std::vector<std::string> InMemoryStore::getAllVariables() const
@@ -30,7 +30,7 @@ std::optional<std::string> InMemoryStore::getVariable(const std::string &key) co
     
     if (var == map.end()) return std::nullopt;
 
-    if ((var->second.time != std::nullopt) && (std::chrono::steady_clock::now() - var->second.time.value()).count() > 0){
+    if (var->second.time.has_value() && std::chrono::system_clock::now() > var->second.time.value()){
             // remove this key from map as it is expired
             this->map.erase(key);
             return std::nullopt;
