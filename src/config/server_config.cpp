@@ -52,6 +52,7 @@ void ServerConfig::config_parser(int argc, char *argv[])
             }
             if (port_flag){
                 std::cerr << "Config error: duplicate --port flag" << std::endl;
+                this->error = ServerConfigErrors::CONFIG_ERROR_DUPLICATE_FLAGS;
                 break;
             }
             else{
@@ -73,6 +74,34 @@ void ServerConfig::config_parser(int argc, char *argv[])
                 continue;
             }
         }
+        else if(str == "--replicaof"){
+            if (i + 2 >= argc){
+                std::cerr << "Config error: invalid " << str << " flag arguments" << std::endl;
+                this->error = ServerConfigErrors::CONFIG_ERROR_INVALID_FLAG_ARG;
+                break;
+            }
+            if(!this->master_host.empty() || this->master_port != 0){
+                std::cerr << "Config error: duplicate --replicaof flag" << std::endl;
+                this->error = ServerConfigErrors::CONFIG_ERROR_INVALID_FLAG_ARG;
+                break;
+            }
+            this->master_host = argv[i+1];
+            try
+            {
+                this->master_port = std::stoi(argv[i+2]);
+            }
+            catch(const std::exception& e)
+            {
+                std::cerr << e.what() << '\n';
+                std::cerr <<"Config error: invalid port number for master server" << std::endl;
+                this->error = ServerConfigErrors::CONFIG_ERROR_INVALID_FLAG_ARG;
+            }
+            this->role = "slave";
+            
+            i+=3;
+            continue;
+
+        }
         else{
             std::cerr << "Config error: invalid flags" << std::endl;
             this->error = ServerConfigErrors::CONFIG_ERROR_INVALID_FLAG;
@@ -81,7 +110,9 @@ void ServerConfig::config_parser(int argc, char *argv[])
     }
 }
 
-ServerConfig::ServerConfig(int argc, char* argv[]): dir(std::string()), dbfilename(std::string()), port(6379)
+ServerConfig::ServerConfig(int argc, char* argv[]): 
+dir(std::string()), dbfilename(std::string()), port(6379), 
+master_port(0), role("master")
 {
     this->config_parser(argc, argv);
 }

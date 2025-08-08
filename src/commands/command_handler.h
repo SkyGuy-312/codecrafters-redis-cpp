@@ -7,7 +7,7 @@
 class CommandHandler{
     private:
     InMemoryStore& storage;
-    const ServerConfig& rdb_fd; 
+    const ServerConfig& cfg_fd; 
 
     public:
     CommandHandler (InMemoryStore& store,const ServerConfig& config);

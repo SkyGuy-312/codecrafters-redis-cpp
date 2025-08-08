@@ -1,7 +1,7 @@
 #include "command_handler.h"
 #include <iostream>
 #include <algorithm>
-CommandHandler::CommandHandler(InMemoryStore& store,const ServerConfig& config):storage(store), rdb_fd(config)
+CommandHandler::CommandHandler(InMemoryStore& store,const ServerConfig& config):storage(store), cfg_fd(config)
 {
 }
 
@@ -91,10 +91,10 @@ std::string CommandHandler::executeCommand(std::vector<std::string>& tokens_vect
                 return NOK;
             }
             if (tokens_vector[2] == "dir"){
-                return "*2\r\n" + static_cast<std::string>("$3\r\n") + "dir\r\n" + "$" + std::to_string(this->rdb_fd.dir.size()) + "\r\n" + this->rdb_fd.dir + "\r\n";
+                return "*2\r\n" + static_cast<std::string>("$3\r\n") + "dir\r\n" + "$" + std::to_string(this->cfg_fd.dir.size()) + "\r\n" + this->cfg_fd.dir + "\r\n";
             }
             else if (tokens_vector[2] == "dbfilename"){
-                return "*2\r\n" + static_cast<std::string>("$10\r\n") + "dbfilename\r\n" + "$" + std::to_string(this->rdb_fd.dbfilename.size()) + "\r\n" + this->rdb_fd.dbfilename + "\r\n"; 
+                return "*2\r\n" + static_cast<std::string>("$10\r\n") + "dbfilename\r\n" + "$" + std::to_string(this->cfg_fd.dbfilename.size()) + "\r\n" + this->cfg_fd.dbfilename + "\r\n"; 
             }
             else {
                 return NOK;
@@ -127,7 +127,7 @@ std::string CommandHandler::executeCommand(std::vector<std::string>& tokens_vect
         std::transform(sub_command.begin(), sub_command.end(),
             sub_command.begin(), [](char c) { return std::toupper(c);});
         if (sub_command == "REPLICATION"){
-            std::string str = "# Replication\r\nrole:master\r\n";
+            std::string str = "# Replication\r\nrole:" + this->cfg_fd.role + "\r\n";
             return "$" + std::to_string(str.size()) + "\r\n" + str + "\r\n";
         }
         else{
