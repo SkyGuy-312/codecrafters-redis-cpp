@@ -35,6 +35,11 @@ std::string CommandHandler::executeCommand(std::vector<std::string>& tokens_vect
                 this->storage.setVariable(tokens_vector[1], tokens_vector[2], static_cast<std::chrono::milliseconds>(time_ms));
                 return "+OK\r\n";
              }
+             else if(sub_command == "RX"){
+                auto time_ms = std::stoll(tokens_vector[4]);
+                this->storage.setVariable(tokens_vector[1], tokens_vector[2], static_cast<std::chrono::milliseconds>(time_ms)*1000);
+                return "+OK\r\n";
+             }
              else{
                 std::cerr << "Error Executing Command: invalud sub-command" << std::endl;
                 return "$-1\r\n";

@@ -6,6 +6,7 @@
 void ServerConfig::config_parser(int argc, char *argv[])
 {
     //parse each argv string (starting from 1 since program name is i = 0)
+    bool port_flag = 0;
     for (int i = 1; i < argc;){
         auto str = std::string(argv[i]);
         if (str == "--dir"){
@@ -43,6 +44,35 @@ void ServerConfig::config_parser(int argc, char *argv[])
                 continue;
             }    
         }
+        else if(str == "--port"){
+            if( i + 1 >= argc ){
+                std::cerr << "Config error: invalid " << str << " flag arguments" << std::endl;
+                this->error = ServerConfigErrors::CONFIG_ERROR_INVALID_FLAG_ARG;
+                break;
+            }
+            if (port_flag){
+                std::cerr << "Config error: duplicate --port flag" << std::endl;
+                break;
+            }
+            else{
+                try
+                {
+                    this->port = std::stoi(argv[i+1]);
+
+                }
+                catch(const std::exception& e)
+                {
+                    std::cerr << e.what() << '\n';
+                    std::cerr << "Config error: invalid " << str << " flag arguments" << std::endl;
+                    this->error = ServerConfigErrors::CONFIG_ERROR_INVALID_FLAG_ARG;
+                }
+                // indicate port is parsed
+                port_flag = 1;
+                // go to next flag
+                i += 2;
+                continue;
+            }
+        }
         else{
             std::cerr << "Config error: invalid flags" << std::endl;
             this->error = ServerConfigErrors::CONFIG_ERROR_INVALID_FLAG;
@@ -51,7 +81,7 @@ void ServerConfig::config_parser(int argc, char *argv[])
     }
 }
 
-ServerConfig::ServerConfig(int argc, char* argv[]): dir(std::string()), dbfilename(std::string())
+ServerConfig::ServerConfig(int argc, char* argv[]): dir(std::string()), dbfilename(std::string()), port(6379)
 {
     this->config_parser(argc, argv);
 }

@@ -12,6 +12,7 @@ struct ServerConfig
 {
     std::string dir;
     std::string dbfilename;
+    int port;
     ServerConfigErrors error{ServerConfigErrors::CONFIG_NO_ERROR};
     void config_parser(int argc, char* argv[]);
     ServerConfig(int argc, char* argv[]);

@@ -9,10 +9,13 @@ int main(int argc, char **argv) {
   
   ServerConfig server_config(argc, argv);
 
-  RedisServer server(6379, server_config);
+  RedisServer server(server_config.port, server_config);
 
   if(server.initialize()){
     server.run();
+  }
+  else{
+    std::cerr << "Failed to initialize server" << std::endl;
   }
   
   return 0;
