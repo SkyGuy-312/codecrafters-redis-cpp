@@ -1,6 +1,7 @@
 #include "rdb_parser.h"
 #include <iostream>
 #include <filesystem>
+#include <chrono>
 
 bool RDBParser::verifyRedisHeader(std::string &header)
 {
@@ -141,7 +142,7 @@ void RDBParser::parse(const std::string &filepath)
     std::string key {};
     std::string value {};
 
-    std::optional<std::chrono::milliseconds> expiry_time;
+    std::optional<std::chrono::time_point<std::chrono::system_clock>> expiry_time;
 
     // the parsing loop
     while (rdb_fd.peek() != EOF){
@@ -152,13 +153,19 @@ void RDBParser::parse(const std::string &filepath)
             case RDBOpcode::EXPIRE_TIME_MS: {
                 uint64_t expiry_ms_val;
                 rdb_fd.read(reinterpret_cast<char*>(&expiry_ms_val), sizeof(uint64_t));
-                expiry_time = std::chrono::milliseconds(expiry_ms_val);
+                // absolute Unix epoch milliseconds -> system_clock time_point
+                expiry_time = std::chrono::time_point<std::chrono::system_clock>(
+                    std::chrono::milliseconds(expiry_ms_val)
+                );
                 continue; // A timestamp is always followed by a key-value pair.
             }
             case RDBOpcode::EXPIRE_TIME_S: {
                 uint32_t expiry_s_val;
                 rdb_fd.read(reinterpret_cast<char*>(&expiry_s_val), sizeof(uint32_t));
-                expiry_time = std::chrono::seconds(expiry_s_val);
+                // absolute Unix epoch seconds -> system_clock time_point
+                expiry_time = std::chrono::time_point<std::chrono::system_clock>(
+                    std::chrono::seconds(expiry_s_val)
+                );
                 continue;
             }
             case RDBOpcode::SELECT_DB: {

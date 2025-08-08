@@ -19,6 +19,7 @@ class InMemoryStore{
     public:
     void setVariable(const std::string& key, const std::string& value);
     void setVariable(const std::string& key, const std::string& value, const std::chrono::milliseconds time_ms);
+    void InMemoryStore::setVariable(const std::string &key, const std::string &value, std::chrono::time_point<std::chrono::system_clock> abs_time);
     std::vector<std::string> getAllVariables()const;
     void resize(int size);
     std::optional<std::string> getVariable (const std::string& key)const;

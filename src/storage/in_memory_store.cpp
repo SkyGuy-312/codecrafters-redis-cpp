@@ -7,7 +7,12 @@ void InMemoryStore::setVariable(const std::string &key, const std::string &value
 
 void InMemoryStore::setVariable(const std::string &key, const std::string &value, const std::chrono::milliseconds time_ms)
 {
-    this->map[key] = {value, std::chrono::time_point<std::chrono::system_clock>(time_ms)};
+    this->map[key] = {value, std::chrono::system_clock::now() + time_ms};
+}
+
+void InMemoryStore::setVariable(const std::string &key, const std::string &value, std::chrono::time_point<std::chrono::system_clock> abs_time)
+{
+    this->map[key] = {value, abs_time};
 }
 
 std::vector<std::string> InMemoryStore::getAllVariables() const
