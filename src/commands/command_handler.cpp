@@ -7,9 +7,13 @@ CommandHandler::CommandHandler(InMemoryStore& store,const ServerConfig& config):
 
 std::string CommandHandler::executeCommand(std::vector<std::string>& tokens_vector)
 {
+    const std::string OK = "+OK\r\n";
+    const std::string NOK = "$-1\r\n";
+
     if (tokens_vector.empty()){
-        std::cerr << "Error executing command: empty token vector" << std::endl;
-        return "$-1\r\n";
+        // std::cerr << "Error executing command: empty token vector" << std::endl;
+        
+        return NOK;
     }
     
     //get command and process it
@@ -20,10 +24,11 @@ std::string CommandHandler::executeCommand(std::vector<std::string>& tokens_vect
     #if 0
     std::cout << command << std::endl;
     #endif
+    
     //execute the command
     if (command == "SET"){
         if ((tokens_vector.size() != 3) && (tokens_vector.size() != 5)){
-            return "$-1\r\n";
+            return NOK;
         }
         if (tokens_vector.size() == 5){
             auto sub_command = tokens_vector[3];
@@ -35,14 +40,14 @@ std::string CommandHandler::executeCommand(std::vector<std::string>& tokens_vect
                 this->storage.setVariable(tokens_vector[1], tokens_vector[2], static_cast<std::chrono::milliseconds>(time_ms));
                 return "+OK\r\n";
              }
-             else if(sub_command == "RX"){
+             else if(sub_command == "EX"){
                 auto time_ms = std::stoll(tokens_vector[4]);
                 this->storage.setVariable(tokens_vector[1], tokens_vector[2], static_cast<std::chrono::milliseconds>(time_ms)*1000);
                 return "+OK\r\n";
              }
              else{
                 std::cerr << "Error Executing Command: invalud sub-command" << std::endl;
-                return "$-1\r\n";
+                return NOK;
              }
 
         }
@@ -50,16 +55,16 @@ std::string CommandHandler::executeCommand(std::vector<std::string>& tokens_vect
             this->storage.setVariable(tokens_vector[1],tokens_vector[2]);
             return "+OK\r\n";
         }
-        return "$-1\r\n";
+        return NOK;
     }
     else if(command == "GET"){
         if (tokens_vector.size() <= 1){
-            return "$-1\r\n";
+            return NOK;
         }
         auto var = this->storage.getVariable(tokens_vector[1]);
         //put it in a RESP bulk string
         if (var == std::nullopt){
-            return "$-1\r\n";
+            return NOK;
         }
         auto str = "$" + std::to_string(var->length()) + "\r\n" + var.value() + "\r\n"; 
         return str;
@@ -69,7 +74,7 @@ std::string CommandHandler::executeCommand(std::vector<std::string>& tokens_vect
     }
     else if(command == "ECHO"){
         if (tokens_vector.size() <= 1){
-            return "$-1\r\n";
+            return NOK;
         }
         // send the command values back to client
         return "$" + std::to_string(tokens_vector[1].length()) + "\r\n" + tokens_vector[1] + "\r\n";
@@ -83,7 +88,7 @@ std::string CommandHandler::executeCommand(std::vector<std::string>& tokens_vect
             sub_command.begin(), [](char c) { return std::toupper(c);});
         if (sub_command == "GET"){
             if (tokens_vector.size() <= 2){
-                return "$-1\r\n";
+                return NOK;
             }
             if (tokens_vector[2] == "dir"){
                 return "*2\r\n" + static_cast<std::string>("$3\r\n") + "dir\r\n" + "$" + std::to_string(this->rdb_fd.dir.size()) + "\r\n" + this->rdb_fd.dir + "\r\n";
@@ -92,12 +97,12 @@ std::string CommandHandler::executeCommand(std::vector<std::string>& tokens_vect
                 return "*2\r\n" + static_cast<std::string>("$10\r\n") + "dbfilename\r\n" + "$" + std::to_string(this->rdb_fd.dbfilename.size()) + "\r\n" + this->rdb_fd.dbfilename + "\r\n"; 
             }
             else {
-                return "$-1\r\n";
+                return NOK;
             }
             
         }
         else{
-            return "$-1\r\n";
+            return NOK;
         }
     }
     else if(command == "KEYS"){
@@ -111,12 +116,29 @@ std::string CommandHandler::executeCommand(std::vector<std::string>& tokens_vect
             return response;
         }
         else{
-            return "$-1\r\n";
+            return NOK;
         }
+    }
+    else if(command == "INFO"){
+        if (tokens_vector.size() != 2){
+            return NOK;
+        }
+        auto sub_command = tokens_vector[1];
+        std::transform(sub_command.begin(), sub_command.end(),
+            sub_command.begin(), [](char c) { return std::toupper(c);});
+        if (sub_command == "REPLICATION"){
+            std::string str = "# Replication\r\nrole:master\r\n";
+            return "$" + std::to_string(str.size()) + "\r\n" + str + "\r\n";
+        }
+        else{
+            std::cerr << "Invalid subcommand" << std::endl;
+        }   
+        
+        return NOK;
     }
     else{
         std::cerr << "Error executing command: invalid command" << std::endl;
-        return "$-1\r\n";
+        return NOK;
     }
 
 

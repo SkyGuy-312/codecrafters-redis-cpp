@@ -48,3 +48,4 @@ _deps
 build/
 vcpkg_installed
 .vscode/
+dump.rdb
