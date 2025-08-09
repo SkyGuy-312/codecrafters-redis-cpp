@@ -13,7 +13,7 @@ CommandHandler::CommandHandler(InMemoryStore& store,const ServerConfig& config):
     this->commands["KEYS"]  = std::make_unique<KeysCommand>();
     this->commands["INFO"]  = std::make_unique<InfoCommand>();
     this->commands["CONFIG"]  = std::make_unique<ConfigCommand>();
-    this->commands["Echo"]  = std::make_unique<EchoCommand>();
+    this->commands["ECHO"]  = std::make_unique<EchoCommand>();
 
 
 }
