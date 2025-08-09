@@ -2,6 +2,7 @@
 #include <array>
 #include <vector>
 #include <iostream>
+#include <random>
 
 void ServerConfig::config_parser(int argc, char *argv[])
 {
@@ -80,15 +81,15 @@ void ServerConfig::config_parser(int argc, char *argv[])
                 this->error = ServerConfigErrors::CONFIG_ERROR_INVALID_FLAG_ARG;
                 break;
             }
-            if(!this->master_host.empty() || this->master_port != 0){
+            if(!this->replication_info.master_host.empty() || this->replication_info.master_port != 0){
                 std::cerr << "Config error: duplicate --replicaof flag" << std::endl;
                 this->error = ServerConfigErrors::CONFIG_ERROR_INVALID_FLAG_ARG;
                 break;
             }
-            this->master_host = argv[i+1];
+            this->replication_info.master_host = argv[i+1];
             try
             {
-                this->master_port = std::stoi(argv[i+2]);
+                this->replication_info.master_host = std::stoi(argv[i+2]);
             }
             catch(const std::exception& e)
             {
@@ -96,11 +97,9 @@ void ServerConfig::config_parser(int argc, char *argv[])
                 std::cerr <<"Config error: invalid port number for master server" << std::endl;
                 this->error = ServerConfigErrors::CONFIG_ERROR_INVALID_FLAG_ARG;
             }
-            this->role = "slave";
-            
+            this->replication_info.role = "slave";
             i+=3;
             continue;
-
         }
         else{
             std::cerr << "Config error: invalid flags" << std::endl;
@@ -112,7 +111,27 @@ void ServerConfig::config_parser(int argc, char *argv[])
 
 ServerConfig::ServerConfig(int argc, char* argv[]): 
 dir(std::string()), dbfilename(std::string()), port(6379), 
-master_port(0), role("master")
+replication_info()
 {
     this->config_parser(argc, argv);
+}
+
+Replication::Replication():
+role("master"),
+master_port(0),
+master_repl_offset(0)
+{
+    // simple random alphanumeric generator for the replid 
+    static const char alphanum[] =
+        "0123456789"
+        "abcdefghijklmnopqrstuvwxyz";
+    std::string replid;
+
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<> dis(0, sizeof(alphanum) - 2);
+    for (int i = 0; i < 40; ++i) {
+        replid += alphanum[dis(gen)];
+    }
+    master_replid = replid;
 }

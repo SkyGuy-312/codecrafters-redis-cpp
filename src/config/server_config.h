@@ -8,7 +8,14 @@ enum class ServerConfigErrors{
     CONFIG_ERROR_INVALID_FLAG_ARG,
 };
 
-
+struct Replication{
+    Replication();
+    std::string role;
+    std::string master_host;
+    int master_port;
+    std::string master_replid;
+    int master_repl_offset;
+};
 
 struct ServerConfig
 {
@@ -16,9 +23,7 @@ struct ServerConfig
     std::string dbfilename;
     int port;
     ServerConfigErrors error{ServerConfigErrors::CONFIG_NO_ERROR};
-    std::string role;
-    std::string master_host;
-    int master_port;
+    Replication replication_info;
     void config_parser(int argc, char* argv[]);
     ServerConfig(int argc, char* argv[]);
 };

@@ -59,7 +59,17 @@ class RedisServer{
     RedisServerEpollErrors epoll_error{};
     RedisServerClientErrors client_error{};
 
+    // Disallow copying - moving since commands are unique ptrs
+    /* EXPLAINATION:
+        Commands are put in a map which have the commands as uniqure ptrs, this is in the command handler class.
+        This makes the commmand handler class non-copyable.
+        The Command handler is composite as an object within the RedisServer class, by turn, 
+        this must mark the Redis server class as also non-copyable, however it is not explicit, implictily compiler will try and generate copy/move constructors
+        so we delete them.
+    */
     RedisServer(int port_number,const ServerConfig& rdb_fd);
+    RedisServer(const RedisServer&)=delete;
+    RedisServer& operator=(const RedisServer&)=delete;
     ~RedisServer();
     bool initialize();
     bool run ();
