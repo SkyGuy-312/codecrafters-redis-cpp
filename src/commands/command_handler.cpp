@@ -3,7 +3,7 @@
 #include <algorithm>
 
 #define OK      "+OK\r\n"
-#define NOK     "-1\r\n"
+#define NOK     "$-1\r\n"
 
 CommandHandler::CommandHandler(InMemoryStore& store,const ServerConfig& config):storage(store), cfg_fd(config)
 {

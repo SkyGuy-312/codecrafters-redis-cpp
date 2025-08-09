@@ -5,7 +5,7 @@
 #include "../config/server_config.h"
 
 #define OK      "+OK\r\n"
-#define NOK     "-1\r\n"
+#define NOK     "$-1\r\n"
 
 class Command{
     public:
