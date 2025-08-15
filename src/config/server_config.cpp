@@ -92,7 +92,7 @@ void ServerConfig::config_parser(int argc, char *argv[])
             std::cout << "Host is " << this->replication_info.master_host << std::endl;
             try
             {
-                this->replication_info.master_port = std::stoi(target.substr(target.find(" ") + 2));
+                this->replication_info.master_port = std::stoi(target.substr(target.find(" ") + 1));
                 std::cout << "Master port is " << this->replication_info.master_port << std::endl;
             }
             catch(const std::exception& e)
