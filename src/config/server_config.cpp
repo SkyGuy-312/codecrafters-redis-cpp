@@ -86,10 +86,13 @@ void ServerConfig::config_parser(int argc, char *argv[])
                 this->error = ServerConfigErrors::CONFIG_ERROR_INVALID_FLAG_ARG;
                 break;
             }
-            this->replication_info.master_host = argv[i+1];
+            std::string target (argv[i+1]);
+            
+            this->replication_info.master_host = target.substr(0,target.find(" ")-1);
+            std::cout << "Host is " << this->replication_info.master_host << std::endl;
             try
             {
-                this->replication_info.master_port = std::stoi(argv[i+2]);
+                this->replication_info.master_port = std::stoi(target.substr(target.find(" ") + 1));
             }
             catch(const std::exception& e)
             {
@@ -98,7 +101,7 @@ void ServerConfig::config_parser(int argc, char *argv[])
                 this->error = ServerConfigErrors::CONFIG_ERROR_INVALID_FLAG_ARG;
             }
             this->replication_info.role = "slave";
-            i+=3;
+            i+=2;
             continue;
         }
         else{
