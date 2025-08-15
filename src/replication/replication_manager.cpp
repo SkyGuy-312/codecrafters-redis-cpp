@@ -39,7 +39,11 @@ int ReplicationManager::connectToMaster()
     
     this->master_address.sin_family = AF_INET;
     this->master_address.sin_port = htons(this->master_port);
-    if (inet_pton(AF_INET, this->master_host.c_str(), &this->master_address.sin_addr) <= 0) {
+    std::string host_to_use = this->master_host;
+    if (host_to_use == "localhost") {
+        host_to_use = "127.0.0.1";
+    }
+    if (inet_pton(AF_INET, host_to_use.c_str(), &this->master_address.sin_addr) <= 0) {
         std::cerr << "Invalid master host address\n";
         this->error = ReplicationManagerErrors::MASTER_SOCKET_CRTEATION_ERROR;
         close(this->master_fd);
