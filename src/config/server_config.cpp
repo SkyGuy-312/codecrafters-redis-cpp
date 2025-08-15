@@ -76,7 +76,7 @@ void ServerConfig::config_parser(int argc, char *argv[])
             }
         }
         else if(str == "--replicaof"){
-            if (i + 2 >= argc){
+            if (i + 1 > argc){
                 std::cerr << "Config error: invalid " << str << " flag arguments" << std::endl;
                 this->error = ServerConfigErrors::CONFIG_ERROR_INVALID_FLAG_ARG;
                 break;
