@@ -76,7 +76,7 @@ void ServerConfig::config_parser(int argc, char *argv[])
             }
         }
         else if(str == "--replicaof"){
-            if (i + 2 > argc){
+            if (i + 2 >= argc){
                 std::cerr << "Config error: invalid " << str << " flag arguments" << std::endl;
                 this->error = ServerConfigErrors::CONFIG_ERROR_INVALID_FLAG_ARG;
                 break;
@@ -89,7 +89,7 @@ void ServerConfig::config_parser(int argc, char *argv[])
             this->replication_info.master_host = argv[i+1];
             try
             {
-                this->replication_info.master_host = std::stoi(argv[i+2]);
+                this->replication_info.master_port = std::stoi(argv[i+2]);
             }
             catch(const std::exception& e)
             {

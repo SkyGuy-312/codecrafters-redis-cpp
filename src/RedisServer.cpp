@@ -9,15 +9,18 @@
 #include "rdb/rdb_parser.h"
 #include <filesystem>
 
-RedisServer::RedisServer(int port_number,const ServerConfig& rdb_fd):command_handler(this->storage, rdb_fd), rdb_parser(this->storage)
+RedisServer::RedisServer(EventLoop& loop, int port_number,const ServerConfig& rdb_fd):
+command_handler(this->storage, rdb_fd),
+rdb_parser(this->storage),
+replication_manager(rdb_fd.replication_info.master_host, rdb_fd.replication_info.master_port),
+server_fd(-1),
+server_port(port_number),
+socket_error(RedisServerSocketErrors::server_no_error),
+epoll_error(RedisServerEpollErrors::epoll_no_error),
+client_error(RedisServerClientErrors::client_no_error),
+event_loop(loop)
 {
     using namespace std::filesystem;
-    this->server_port = port_number;
-    this->server_fd = -1;
-    this->epoll_fd = -1;
-    this->socket_error = RedisServerSocketErrors::server_no_error;
-    this->epoll_error = RedisServerEpollErrors::epoll_no_error;
-    this->client_error = RedisServerClientErrors::client_no_error;
 
     if (!rdb_fd.dir.empty() && !rdb_fd.dbfilename.empty()) {
         path full_path = path(rdb_fd.dir)/rdb_fd.dbfilename;
@@ -35,7 +38,7 @@ bool RedisServer::initialize()
         this->socket_error = RedisServerSocketErrors::server_socket_creation_error;
         return false;
     }
-    // Since the tester restarts your program quite often, setting SO_REUSEADDR
+    // Since the tester restarts the program quite often, setting SO_REUSEADDR
     // ensures that we don't run into 'Address already in use' errors
     int reuse = 1;
     if (setsockopt(this->server_fd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse)) < 0)
@@ -67,99 +70,43 @@ bool RedisServer::initialize()
         return false;
     }
 
-    this->epoll_fd = epoll_create1(this->EPOLL_CREATE1_NOFLAGS);
-    if (this->epoll_fd < 0)
-    {
-        std::cerr << "Failed to create epoll instance\n";
-        this->epoll_error = RedisServerEpollErrors::epoll_fd_creation_error;
-        switch (errno)
-        {
-        case EMFILE:
-            std::cerr << "epoll fd creation failed: too many open file descriptors! program resource limit reachaed." << std::endl;
-            close(this->server_fd);
-            break;
-        case ENFILE:
-            std::cerr << "epoll fd creation failed: system-wide resource limit for file descriptor reached." << std::endl;
-            close(this->server_fd);
-            break;
-        case EINVAL:
-            std::cerr << "Invalid flag argument.." << std::endl;
-            close(this->server_fd);
-            break;
-        }
-
-        return false;
-    }
-
-    this->server_event.data.fd = server_fd;
-    this->server_event.events = EPOLLIN;
-    if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, server_fd, &this->server_event) < 0)
-    {
-        this->epoll_error = RedisServerEpollErrors::epoll_ctl_error;
-        switch (errno)
-        {
-        case EBADF:
-            std::cerr << "server epoll_ctl error: invalid file descriptor" << std::endl;
-            close(this->server_fd);
-            close(this->epoll_fd);
-            break;
-        case EEXIST:
-            std::cerr << "server epoll_ctl error: Server FD already being monitored" << std::endl;
-            break;
-        case ENOMEM:
-            std::cerr << "server epoll_ctl error: kernel out of memory" << std::endl;
-            close(this->server_fd);
-            close(this->epoll_fd);
-            break;
-        default:
-            perror("server epoll_ctl failed with unexpected error");
-            close(this->server_fd);
-            close(this->epoll_fd);
-            break;
-        }
-    }
-
+    if (!event_loop.addFd(this->server_fd, EPOLLIN, this)) return false;
 
     return true;
 }
 
-bool RedisServer::run()
+void RedisServer::handleEvent(int fd, uint32_t events)
 {
-    struct sockaddr_in client_addr;
-    socklen_t client_addr_len = sizeof(client_addr);
-    std::cout << "Waiting for a client to connect...\n";
+    if (fd == this->server_fd){
 
-    while (true)
-    {
-        int event_nums = epoll_wait(this->epoll_fd, this->triggered_events_buffer, TRIGGERED_EVENTS_BUFFER_SIZE, -1);
-        switch (event_nums)
-        {
-        case 0:
-            std::cerr << "timeout occrred\n";
-            break;
-        case -1:
-            std::cerr << "error occurred\n";
-            break;
-        default:
-            for (int i{0}; i < event_nums; i++)
-            {
-                if (triggered_events_buffer[i].data.fd == server_fd)
-                {
-                    this->handleNewConneciton(client_addr, client_addr_len);
-                }
-                else
-                {
-                    this->handleClientData(triggered_events_buffer[i].data.fd);
-                }
-            }
-            break;
-        }
+        this->handleNewConneciton();
+    }
+    else{
+        this->handleClientData(fd);
     }
 }
 
-void RedisServer::handleNewConneciton(sockaddr_in &new_conn_addr, socklen_t &new_conn_len)
+bool RedisServer::startReplication()
 {
-    auto client_fd = accept(this->server_fd, reinterpret_cast<sockaddr *>(&new_conn_addr), &new_conn_len);
+    int master_fd = this->replication_manager.connectToMaster();
+    if (master_fd < 0){
+        std::cerr << "Failed to initiate communication to master" << std::endl;
+        return false;
+    }
+    epoll_event master_event;
+    master_event.data.fd = master_fd;
+    master_event.events = EPOLLIN;
+    event_loop.addFd(master_fd, EPOLLIN, &this->replication_manager);
+
+    replication_manager.startHandshake();
+    return true;
+}
+
+void RedisServer::handleNewConneciton()
+{
+    struct sockaddr_in client_addr;
+    socklen_t client_addr_len = sizeof(client_addr);
+    auto client_fd = accept(this->server_fd, reinterpret_cast<sockaddr *>(&client_addr), &client_addr_len);
     switch (client_fd)
     {
     case -1:
@@ -167,30 +114,7 @@ void RedisServer::handleNewConneciton(sockaddr_in &new_conn_addr, socklen_t &new
         this->client_error = RedisServerClientErrors::client_accept_error;
         break;
     default:
-        epoll_event client_event;
-        client_event.data.fd = client_fd;
-        client_event.events = EPOLLIN;
-        if (epoll_ctl(this->epoll_fd, EPOLL_CTL_ADD, client_fd, &client_event) < 0)
-        {
-            switch (errno)
-            {
-            case EBADF:
-                std::cerr << "client epoll_ctl error: invalid file descriptor" << std::endl;
-                close(client_fd);
-                break;
-            case EEXIST:
-                std::cerr << "client epoll_ctl error: client FD already being monitored" << std::endl;
-                break;
-            case ENOMEM:
-                std::cerr << "client epoll_ctl error: kernel out of memory" << std::endl;
-                close(client_fd);
-                break;
-            default:
-                perror("client epoll_ctl failed with unexpected error");
-                close(client_fd);
-                break;
-            }
-        }
+        event_loop.addFd(client_fd, EPOLLIN, this);
         break;
     }
 }
@@ -202,12 +126,12 @@ void RedisServer::handleClientData(int client_fd)
     {
     case -1:
         std::cerr << "error occurred while recieving data from client" << std::endl;
-        epoll_ctl(this->epoll_fd, EPOLL_CTL_DEL, client_fd, nullptr);
+        event_loop.delFd(client_fd);
         close(client_fd);
         break;
     case 0:
         std::cerr << "client gracefully disconnected" << std::endl;
-        epoll_ctl(this->epoll_fd, EPOLL_CTL_DEL, client_fd, nullptr);
+        event_loop.delFd(client_fd);
         close(client_fd);
         break;
     default:
@@ -230,12 +154,12 @@ bool RedisServer::sendResponse(int client_fd, const std::string& response_string
         {
         case EPIPE:
             std::cerr << "Client already gracefully disconnected" << std::endl;
-            epoll_ctl(this->epoll_fd, EPOLL_CTL_DEL, client_fd, nullptr);
+            event_loop.delFd(client_fd);
             close(client_fd);
             return false;
         case ECONNRESET:
             std::cerr << "Client forcefully disconnected" << std::endl;
-            epoll_ctl(this->epoll_fd, EPOLL_CTL_DEL, client_fd, nullptr);
+            event_loop.delFd(client_fd);
             close(client_fd);
             return false;
         case EAGAIN: // or EWOULDBLOCK
@@ -246,7 +170,7 @@ bool RedisServer::sendResponse(int client_fd, const std::string& response_string
             return false;
         default:
             perror("Unexpected send error");
-            epoll_ctl(this->epoll_fd, EPOLL_CTL_DEL, client_fd, nullptr);
+            event_loop.delFd(client_fd);
             close(client_fd);
             return false;
         }
@@ -260,8 +184,5 @@ RedisServer::~RedisServer()
     {
         close(this->server_fd);
     }
-    if (this->epoll_fd != -1)
-    {
-        close(this->epoll_fd);
-    }
+    event_loop.delFd(this->server_fd);
 }

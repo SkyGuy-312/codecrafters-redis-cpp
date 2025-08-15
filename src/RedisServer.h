@@ -3,10 +3,13 @@
 #include "commands/command_handler.h"
 #include "config/server_config.h"
 #include "rdb/rdb_parser.h"
+#include "replication/replication_manager.h"
 #include <arpa/inet.h>
 #include <sys/epoll.h>
 #include <string>
 #include <vector>
+#include "handler/event_handler.h"
+#include "events/event_loop.h"
 
 enum class RedisServerSocketErrors{
     server_no_error,
@@ -28,28 +31,26 @@ enum class RedisServerClientErrors{
 };
 
 
-class RedisServer{
+class RedisServer: public IEventHandler{
     private:
     static constexpr int DATA_BUFFER_SIZE {1000};
-    static constexpr int TRIGGERED_EVENTS_BUFFER_SIZE {10};
-    static constexpr int EPOLL_CREATE1_NOFLAGS = 0;
 
-    int server_fd{};
-    int epoll_fd{};
+    int server_fd;
 
     InMemoryStore storage;
     CommandHandler command_handler;
     RDBParser rdb_parser;
+    ReplicationManager replication_manager;
 
     sockaddr_in server_address{};    
     epoll_event server_event{};
     int server_port{};
     
-    
-    epoll_event triggered_events_buffer[TRIGGERED_EVENTS_BUFFER_SIZE];
     char data_buffer[DATA_BUFFER_SIZE];
 
-    void handleNewConneciton(sockaddr_in& new_conn_addr,  socklen_t& new_conn_len);
+    EventLoop& event_loop;
+
+    void handleNewConneciton();
     void handleClientData(int client_fd);
     bool sendResponse (int client_fd, const std::string& response_string);
 
@@ -59,6 +60,14 @@ class RedisServer{
     RedisServerEpollErrors epoll_error{};
     RedisServerClientErrors client_error{};
 
+    RedisServer(EventLoop& loop, int port_number,const ServerConfig& rdb_fd);
+    ~RedisServer();
+    bool initialize();
+    bool run ();
+    virtual void handleEvent(int fd, uint32_t events) override;
+
+    bool startReplication();
+
     // Disallow copying - moving since commands are unique ptrs
     /* EXPLAINATION:
         Commands are put in a map which have the commands as uniqure ptrs, this is in the command handler class.
@@ -66,13 +75,10 @@ class RedisServer{
         The Command handler is composite as an object within the RedisServer class, by turn, 
         this must mark the Redis server class as also non-copyable, however it is not explicit, implictily compiler will try and generate copy/move constructors
         so we delete them.
-    */
-    RedisServer(int port_number,const ServerConfig& rdb_fd);
+    */    
     RedisServer(const RedisServer&)=delete;
     RedisServer& operator=(const RedisServer&)=delete;
-    ~RedisServer();
-    bool initialize();
-    bool run ();
+    
     
     
 
