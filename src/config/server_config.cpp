@@ -88,11 +88,11 @@ void ServerConfig::config_parser(int argc, char *argv[])
             }
             std::string target (argv[i+1]);
             
-            this->replication_info.master_host = target.substr(0,target.find(" ")-1);
+            this->replication_info.master_host = target.substr(0,target.find(" "));
             std::cout << "Host is " << this->replication_info.master_host << std::endl;
             try
             {
-                this->replication_info.master_port = std::stoi(target.substr(target.find(" ") + 1));
+                this->replication_info.master_port = std::stoi(target.substr(target.find(" ") + 2));
             }
             catch(const std::exception& e)
             {
