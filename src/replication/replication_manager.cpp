@@ -38,6 +38,19 @@ void ReplicationManager::SendRepliconfCapa()
     this->current_state = HandshakeState::AWAITING_REPLCONF_CAPA_OK;
 }
 
+void ReplicationManager::sendPsync()
+{
+    std::string psync = 
+    "*3\r\n"
+    "$4\r\nPSYNC\r\n"
+    "$1\r\n?\r\n"
+    "$2\r\n-1\r\n";
+    if (send(this->master_fd, psync.c_str(), psync.length(), 0) < 0){
+        this->handleHandshakeFailure("Sending psync to master failed! aborting...");
+    }
+    this->current_state = HandshakeState::AWAITING_PSYNC_RESPONSE;
+}
+
 void ReplicationManager::handleHandshakeFailure(const std::string& fail_msg)
 {
     std::cerr << fail_msg << std::endl;
@@ -125,7 +138,7 @@ void ReplicationManager::processMasterData(const std::string &data)
         case HandshakeState::AWAITING_REPLCONF_CAPA_OK:
             if (data == "+OK\r\n"){
                 std::cout <<"Received +OK from master. Starting REPLICONF for capabilities..." << std::endl;
-                //will add capa later on
+                this->sendPsync();
             }
             else{
                 this->handleHandshakeFailure("Expected +OK, but received: " + data + "\n");

@@ -17,6 +17,7 @@ enum class HandshakeState{
     AWAITING_REPLCONF_PORT_OK,
     AWAITING_REPLCONF_CAPA_OK,
     READY_FOR_PSYNC,
+    AWAITING_PSYNC_RESPONSE,
     CONNECTED
 };
 
@@ -35,6 +36,7 @@ class ReplicationManager: public IEventHandler{
     void sendPing();
     void sendRepliconfPort();
     void SendRepliconfCapa();
+    void sendPsync();
     void handleHandshakeFailure(const std::string& fail_msg);
 
     public:
