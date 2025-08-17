@@ -105,7 +105,7 @@ void ReplicationManager::processMasterData(const std::string &data)
 {
     switch(this->current_state){
         case HandshakeState::AWAITING_PONG:
-            if (data == "+PONG"){
+            if (data == "+PONG\r\n"){
                 std::cout <<"Received PONG from master. Starting REPLICONF for port.." << std::endl;
                 this->sendRepliconfPort();
             }
