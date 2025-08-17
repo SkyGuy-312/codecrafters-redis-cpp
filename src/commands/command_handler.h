@@ -14,6 +14,7 @@
 #include "keys_command.h"
 #include "config_command.h"
 #include "replconf_command.h"
+#include "psync_command.h"
 
 class CommandHandler{
     private:

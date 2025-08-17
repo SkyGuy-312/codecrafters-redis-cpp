@@ -15,7 +15,7 @@ CommandHandler::CommandHandler(InMemoryStore& store,const ServerConfig& config):
     this->commands["CONFIG"]  = std::make_unique<ConfigCommand>();
     this->commands["ECHO"]  = std::make_unique<EchoCommand>();
     this->commands["REPLCONF"] = std::make_unique<ReplconfCommand>();
-
+    this->commands["PSYNC"] = std::make_unique<PsyncCommand>();
 }
 
 std::string CommandHandler::executeCommand(std::vector<std::string>& tokens_vector)
