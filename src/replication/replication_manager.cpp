@@ -15,10 +15,10 @@ void ReplicationManager::sendPing()
 void ReplicationManager::sendRepliconfPort()
 {
     std::string repliconf = 
-    "*3\r\n\
-    $8\r\nREPLCONF\r\n\
-    $14\r\nlistening-port\r\n\
-    $" + std::to_string(std::to_string(this->replica_port).length()) + "\r\n" + std::to_string(this->replica_port) +"\r\n";
+    "*3\r\n"
+    "$8\r\nREPLCONF\r\n"
+    "$14\r\nlistening-port\r\n"
+    "$" + std::to_string(std::to_string(this->replica_port).length()) + "\r\n" + std::to_string(this->replica_port) +"\r\n";
     if (send(this->master_fd, repliconf.c_str(), repliconf.length(), 0) < 0){
         this->handleHandshakeFailure("Sending repliconf port to master failed! aborting...");
     }
@@ -28,10 +28,10 @@ void ReplicationManager::sendRepliconfPort()
 void ReplicationManager::SendRepliconfCapa()
 {
     std::string repliconf = 
-    "*3\r\n\
-    $8\r\nREPLICONF\r\n\
-    $4\r\ncapa\r\n\
-    $6\r\npsync2\r\n";
+        "*3\r\n"
+        "$8\r\nREPLCONF\r\n"
+        "$4\r\ncapa\r\n"
+        "$6\r\npsync2\r\n";
     if (send(this->master_fd, repliconf.c_str(), repliconf.length(), 0) < 0){
         this->handleHandshakeFailure("Sending repliconf capabilities to master failed! aborting...");
     }
