@@ -12,7 +12,7 @@
 RedisServer::RedisServer(EventLoop& loop, int port_number,const ServerConfig& rdb_fd):
 command_handler(this->storage, rdb_fd),
 rdb_parser(this->storage),
-replication_manager(rdb_fd.replication_info.master_host, rdb_fd.replication_info.master_port),
+replication_manager("", 0, 0),
 server_fd(-1),
 server_port(port_number),
 socket_error(RedisServerSocketErrors::server_no_error),
@@ -26,6 +26,9 @@ event_loop(loop)
         path full_path = path(rdb_fd.dir)/rdb_fd.dbfilename;
         std::cout << full_path.string() << std::endl;
         rdb_parser.parse(full_path.string());
+    }
+    if (rdb_fd.replication_info.role == "slave"){
+        replication_manager= ReplicationManager(rdb_fd.replication_info.master_host, rdb_fd.replication_info.master_port, this->server_port);
     }
 }
 

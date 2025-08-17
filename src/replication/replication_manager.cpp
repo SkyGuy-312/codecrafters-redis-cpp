@@ -7,13 +7,47 @@ void ReplicationManager::sendPing()
 {
     std::string ping = "*1\r\n$4\r\nPING\r\n";
     if (send(this->master_fd, ping.c_str(), ping.length(), 0) < 0){
-        std::cerr << "Sending ping failed to master! aborting..." << std::endl;
+        this->handleHandshakeFailure("Sending ping to master failed! aborting...");
     }
+    this->current_state = HandshakeState::AWAITING_PONG;
 }
 
-ReplicationManager::ReplicationManager(std::string host, int port):
+void ReplicationManager::sendRepliconfPort()
+{
+    std::string repliconf = 
+    "*3\r\n\
+    $8\r\nREPLCONF\r\n\
+    $14\r\nlistening-port\r\n\
+    $" + std::to_string(std::to_string(this->replica_port).length()) + "\r\n" + std::to_string(this->replica_port) +"\r\n";
+    if (send(this->master_fd, repliconf.c_str(), repliconf.length(), 0) < 0){
+        this->handleHandshakeFailure("Sending repliconf port to master failed! aborting...");
+    }
+    this->current_state = HandshakeState::AWAITING_REPLCONF_PORT_OK;
+}
+
+void ReplicationManager::SendRepliconfCapa()
+{
+    std::string repliconf = 
+    "*3\r\n\
+    $8\r\nREPLICONF\r\n\
+    $4\r\ncapa\r\n\
+    $6\r\npsync2\r\n";
+    if (send(this->master_fd, repliconf.c_str(), repliconf.length(), 0) < 0){
+        this->handleHandshakeFailure("Sending repliconf capabilities to master failed! aborting...");
+    }
+    this->current_state = HandshakeState::AWAITING_REPLCONF_CAPA_OK;
+}
+
+void ReplicationManager::handleHandshakeFailure(const std::string& fail_msg)
+{
+    std::cerr << fail_msg << std::endl;
+    close(this->master_fd);
+}
+
+ReplicationManager::ReplicationManager(std::string host, int port, int rep_port):
 master_host(host),
 master_port(port),
+replica_port(rep_port),
 error(ReplicationManagerErrors::NO_ERROR)
 {
 }
@@ -63,12 +97,44 @@ int ReplicationManager::connectToMaster()
 bool ReplicationManager::startHandshake()
 {
     sendPing();
+
     return true;
 }
 
 void ReplicationManager::processMasterData(const std::string &data)
 {
-    if (data.find("+PONG") != std::string::npos) std::cout <<"Received PONG from master." << std::endl;
+    switch(this->current_state){
+        case HandshakeState::AWAITING_PONG:
+            if (data == "+PONG"){
+                std::cout <<"Received PONG from master. Starting REPLICONF for port.." << std::endl;
+                this->sendRepliconfPort();
+            }
+            else{
+                this->handleHandshakeFailure("Expected +PONG, but received: " + data + "\n");
+            }
+            break;
+        case HandshakeState::AWAITING_REPLCONF_PORT_OK:
+            if (data == "+OK\r\n"){
+                std::cout <<"Received +OK from master. Starting REPLICONF for capabilities..." << std::endl;
+                this->SendRepliconfCapa();
+            }
+            else{
+                this->handleHandshakeFailure("Expected +OK, but received: " + data + "\n");
+            }
+            break;
+        case HandshakeState::AWAITING_REPLCONF_CAPA_OK:
+            if (data == "+OK\r\n"){
+                std::cout <<"Received +OK from master. Starting REPLICONF for capabilities..." << std::endl;
+                //will add capa later on
+            }
+            else{
+                this->handleHandshakeFailure("Expected +OK, but received: " + data + "\n");
+            }
+            break;
+
+    }
+
+
 }
 
 void ReplicationManager::handleEvent(int fd, unsigned int events)
