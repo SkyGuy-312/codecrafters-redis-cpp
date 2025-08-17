@@ -144,6 +144,8 @@ void ReplicationManager::processMasterData(const std::string &data)
                 this->handleHandshakeFailure("Expected +OK, but received: " + data + "\n");
             }
             break;
+        case HandshakeState::AWAITING_PSYNC_RESPONSE:
+            
 
     }
 

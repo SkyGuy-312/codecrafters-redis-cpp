@@ -14,7 +14,7 @@ CommandHandler::CommandHandler(InMemoryStore& store,const ServerConfig& config):
     this->commands["INFO"]  = std::make_unique<InfoCommand>();
     this->commands["CONFIG"]  = std::make_unique<ConfigCommand>();
     this->commands["ECHO"]  = std::make_unique<EchoCommand>();
-
+    this->commands["REPLCONF"] = std::make_unique<ReplconfCommand>();
 
 }
 

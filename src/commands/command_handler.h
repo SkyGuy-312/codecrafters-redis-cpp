@@ -13,6 +13,7 @@
 #include "info_command.h"
 #include "keys_command.h"
 #include "config_command.h"
+#include "replconf_command.h"
 
 class CommandHandler{
     private:
