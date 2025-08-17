@@ -41,7 +41,7 @@ void ReplicationManager::SendRepliconfCapa()
 void ReplicationManager::sendPsync()
 {
     std::string psync = 
-    "*3\r\n"
+    "*4\r\n"
     "$4\r\nPSYNC\r\n"
     "$1\r\n?\r\n"
     "$2\r\n-1\r\n";
