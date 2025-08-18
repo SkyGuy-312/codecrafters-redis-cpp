@@ -143,6 +143,11 @@ void RedisServer::handleClientData(int client_fd)
         {
             auto response = command_handler.executeCommand(tokens);
             this->sendResponse(client_fd, response);
+            if (tokens[0] == "PSYNC"){
+                std::string rdb_content = RDBParser::getEmptyRDB();
+                std::string rdb_response = "$" + std::to_string(rdb_content.length()) + "\r\n" + rdb_content;
+                this->sendResponse(client_fd, rdb_response);
+            }
         }
         break;
     }

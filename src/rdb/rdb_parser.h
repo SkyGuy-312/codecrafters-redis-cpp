@@ -76,4 +76,5 @@ class RDBParser{
 public:
     RDBParser(InMemoryStore& store);
     void parse(const std::string& filepath);
+    static std::string getEmptyRDB();
 };

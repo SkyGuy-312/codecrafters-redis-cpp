@@ -211,3 +211,13 @@ void RDBParser::parse(const std::string &filepath)
         }
     }
 }
+
+std::string RDBParser::getEmptyRDB()
+{
+    // This is the hex representation of a minimal, empty RDB file.
+    // It contains the "REDIS0011" header, a SELECTDB 0 opcode,
+    // an EOF opcode, and an 8-byte CRC64 checksum.
+    const char empty_rdb_hex[] =
+        "\x52\x45\x44\x49\x53\x30\x30\x31\x31\xfe\x00\xff\xe0\x3a\xb8\x75\x34\x23\x78\x51";
+    return std::string(empty_rdb_hex, sizeof(empty_rdb_hex) - 1);
+}
