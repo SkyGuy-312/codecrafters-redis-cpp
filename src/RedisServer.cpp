@@ -12,7 +12,6 @@
 RedisServer::RedisServer(EventLoop& loop, int port_number,const ServerConfig& rdb_fd):
 command_handler(this->storage, rdb_fd),
 rdb_parser(this->storage),
-replication_manager("", 0, 0),
 server_fd(-1),
 server_port(port_number),
 socket_error(RedisServerSocketErrors::server_no_error),
@@ -20,15 +19,21 @@ epoll_error(RedisServerEpollErrors::epoll_no_error),
 client_error(RedisServerClientErrors::client_no_error),
 event_loop(loop)
 {
+    
+    if (rdb_fd.replication_info.role == "slave"){
+        replication_manager= std::make_unique<ReplicationManager>(
+            rdb_fd.replication_info.master_host,
+            rdb_fd.replication_info.master_port,
+            this->server_port
+        );
+    }
+
     using namespace std::filesystem;
 
     if (!rdb_fd.dir.empty() && !rdb_fd.dbfilename.empty()) {
         path full_path = path(rdb_fd.dir)/rdb_fd.dbfilename;
         std::cout << full_path.string() << std::endl;
         rdb_parser.parse(full_path.string());
-    }
-    if (rdb_fd.replication_info.role == "slave"){
-        replication_manager= ReplicationManager(rdb_fd.replication_info.master_host, rdb_fd.replication_info.master_port, this->server_port);
     }
 }
 
@@ -91,7 +96,9 @@ void RedisServer::handleEvent(int fd, uint32_t events)
 
 bool RedisServer::startReplication()
 {
-    int master_fd = this->replication_manager.connectToMaster();
+    if (!this->replication_manager) return false;
+
+    int master_fd = this->replication_manager->connectToMaster();
     if (master_fd < 0){
         std::cerr << "Failed to initiate communication to master" << std::endl;
         return false;
@@ -99,9 +106,9 @@ bool RedisServer::startReplication()
     epoll_event master_event;
     master_event.data.fd = master_fd;
     master_event.events = EPOLLIN;
-    event_loop.addFd(master_fd, EPOLLIN, &this->replication_manager);
+    event_loop.addFd(master_fd, EPOLLIN, this->replication_manager.get());
 
-    replication_manager.startHandshake();
+    replication_manager->startHandshake();
     return true;
 }
 
@@ -143,10 +150,28 @@ void RedisServer::handleClientData(int client_fd)
         {
             auto response = command_handler.executeCommand(tokens);
             this->sendResponse(client_fd, response);
-            if (tokens[0] == "PSYNC"){
+
+            auto cmd = tokens[0];
+
+            std::transform(
+                cmd.begin(), cmd.end(), cmd.begin(),
+                [] (char c){
+                    return std::toupper(c);
+                });
+
+            if (cmd == "PSYNC"){
+                // this client is a replica. Add it to replica tracker
+                this->replica_fds.push_back(client_fd);
                 std::string rdb_content = RDBParser::getEmptyRDB();
                 std::string rdb_response = "$" + std::to_string(rdb_content.length()) + "\r\n" + rdb_content;
                 this->sendResponse(client_fd, rdb_response);
+            }
+
+            //propagate to all replicas
+            if (this->command_handler.isWriteCommand(cmd)){
+                for (int replica_fd : this->replica_fds){
+                    this->sendResponse(replica_fd, std::string(this->data_buffer, num_bytes));
+                }
             }
         }
         break;

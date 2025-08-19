@@ -11,4 +11,5 @@ class Command{
     public:
     virtual ~Command() = default;
     virtual std::string execute(const std::vector<std::string>& tokens_vector, InMemoryStore& storage, const ServerConfig& config) = 0;
+    virtual inline bool isWriteCmd() {return false;};
 };

@@ -36,11 +36,12 @@ class RedisServer: public IEventHandler{
     static constexpr int DATA_BUFFER_SIZE {1000};
 
     int server_fd;
+    std::vector<int> replica_fds;
 
     InMemoryStore storage;
     CommandHandler command_handler;
     RDBParser rdb_parser;
-    ReplicationManager replication_manager;
+    std::unique_ptr<ReplicationManager> replication_manager;
 
     sockaddr_in server_address{};    
     epoll_event server_event{};

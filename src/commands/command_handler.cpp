@@ -39,3 +39,14 @@ std::string CommandHandler::executeCommand(std::vector<std::string>& tokens_vect
         return NOK;
     }
 }
+
+bool CommandHandler::isWriteCommand(std::string &cmd)
+{
+    auto it = this->commands.find(cmd);
+    if (it != commands.end()){
+        return it->second->isWriteCmd();
+    }
+    else{
+        return NOK;
+    }
+}

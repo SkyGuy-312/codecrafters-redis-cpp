@@ -25,7 +25,7 @@ class CommandHandler{
     public:
     CommandHandler (InMemoryStore& store,const ServerConfig& config);
     std::string executeCommand(std::vector<std::string>& tokens_vector);
-
+    bool isWriteCommand(std::string& cmd);
 
 };
 
