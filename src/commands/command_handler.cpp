@@ -47,6 +47,6 @@ bool CommandHandler::isWriteCommand(std::string &cmd)
         return it->second->isWriteCmd();
     }
     else{
-        return NOK;
+        return false;
     }
 }
