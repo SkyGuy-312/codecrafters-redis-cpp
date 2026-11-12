@@ -2,8 +2,12 @@
 #include "events/event_loop.h"
 #include "config/server_config.h"
 #include "RedisServer.h"
+#include <signal.h>
 
 int main(int argc, char **argv) {
+  // configure SIGPIPE signal to be ignored as it is handled by redis itself
+  signal(SIGPIPE, SIG_IGN);
+  
   // Flush after every std::cout / std::cerr
   std::cout << std::unitbuf;
   std::cerr << std::unitbuf;

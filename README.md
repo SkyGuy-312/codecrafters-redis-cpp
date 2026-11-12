@@ -26,6 +26,7 @@ A high-performance Redis clone implementation in C++ featuring a modular, event-
 ### Core Components
 
 #### EventLoop (`src/events/`)
+
 ```cpp
 class EventLoop {
     // Generic epoll-based event dispatcher
@@ -36,6 +37,7 @@ class EventLoop {
 ```
 
 #### RedisServer (`src/RedisServer.h`)
+
 ```cpp
 class RedisServer : public IEventHandler {
     // Main server class managing client connections
@@ -47,6 +49,7 @@ class RedisServer : public IEventHandler {
 ```
 
 #### CommandHandler (`src/commands/`)
+
 ```cpp
 class CommandHandler {
     // Command pattern implementation
@@ -77,11 +80,13 @@ class ReplicationManager : public IEventHandler {
 ## 🛠️ Building & Running
 
 ### Prerequisites
+
 - CMake 3.13+
 - C++23 compatible compiler (GCC 10+, Clang 12+)
 - vcpkg package manager
 
 ### Build Instructions
+
 ```bash
 # Clone the repository
 git clone https://git.codecrafters.io/9593de7f7d1e19a0
@@ -96,6 +101,7 @@ cmake --build ./build
 ```
 
 ### Running the Server
+
 ```bash
 # Start as master (default port 6379)
 ./build/server
@@ -145,12 +151,14 @@ src/
 ## 🔧 Configuration Options
 
 ### Command Line Arguments
+
 - `--port <port>` - Server listening port (default: 6379)
 - `--dir <directory>` - RDB file directory
 - `--dbfilename <filename>` - RDB filename
 - `--replicaof <host> <port>` - Run as replica of specified master
 
 ### Example Configurations
+
 ```bash
 # Master server with persistence
 ./build/server --port 6379 --dir ./data --dbfilename dump.rdb
@@ -162,6 +170,7 @@ src/
 ## 🧪 Testing
 
 ### Manual Testing
+
 ```bash
 # Test basic commands
 redis-cli -p 6379 PING
@@ -174,6 +183,7 @@ redis-cli -p 6380 GET key1         # Should return value1 on replica
 ```
 
 ### Supported RESP Commands
+
 | Command | Syntax | Description |
 |---------|--------|-------------|
 | PING | `PING` | Test server connectivity |
@@ -187,7 +197,9 @@ redis-cli -p 6380 GET key1         # Should return value1 on replica
 ## 🎯 Design Patterns
 
 ### Command Pattern
+
 Each Redis command is implemented as a separate class inheriting from `Command`:
+
 ```cpp
 class SetCommand : public Command {
     std::string execute(const std::vector<std::string>& tokens, 
@@ -198,7 +210,9 @@ class SetCommand : public Command {
 ```
 
 ### Observer Pattern
+
 Event-driven architecture using `IEventHandler` interface:
+
 ```cpp
 class IEventHandler {
     virtual void handleEvent(int fd, unsigned int events) = 0;
@@ -206,11 +220,13 @@ class IEventHandler {
 ```
 
 ### Strategy Pattern
+
 Configurable server behavior based on role (master/replica).
 
 ## 🔄 Replication Protocol
 
 ### Handshake Sequence
+
 1. **PING** → **+PONG**
 2. **REPLCONF listening-port \<port>** → **+OK**
 3. **REPLCONF capa psync2** → **+OK**
@@ -219,6 +235,7 @@ Configurable server behavior based on role (master/replica).
 6. **Command Stream** (continuous RESP commands)
 
 ### State Machine
+
 ```
 DISCONNECTED → AWAITING_PONG → AWAITING_REPLCONF_PORT_OK 
 → AWAITING_REPLCONF_CAPA_OK → AWAITING_PSYNC_RESPONSE 

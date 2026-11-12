@@ -2,6 +2,9 @@
 
 std::string ConfigCommand::execute(const std::vector<std::string> &tokens_vector, InMemoryStore &storage, const ServerConfig &config)
 {
+    if (tokens_vector.size() < 2){
+        return NOK;
+    }
     auto sub_command = tokens_vector[1];
     std::transform(sub_command.begin(), sub_command.end(),
         sub_command.begin(), [](char c) { return std::toupper(c);});

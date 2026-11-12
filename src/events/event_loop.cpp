@@ -78,18 +78,32 @@ void EventLoop::run(){
     this->running = true;
     constexpr unsigned char TRIGGERED_EVENTS_BUFFER_SIZE = 20;
     this->events.resize(TRIGGERED_EVENTS_BUFFER_SIZE);
-    while (true){
+    while (running){
         int triggered_events_count = epoll_wait(this->epoll_fd, events.data(), TRIGGERED_EVENTS_BUFFER_SIZE, -1);
         if (triggered_events_count < 1){
-            std::cerr << "error occurred\n";
-            break;
+            switch(errno)
+            {
+                case EINTR:
+                    continue; // interrupted by signal, retry
+                case EINVAL:
+                case EBADF:
+                    perror("invalid epfd");
+                    break;
+                case EFAULT:
+                    perror("epoll_wait: epfd points outside the accessible address space");
+                    break;
+                default:
+                    perror("epoll_wait failed");
+                    break;
+            }
+            this->running = false;
         }
         for (int i{0}; i < triggered_events_count; i++){
             const int &fd = events[i].data.fd;
             if (fd == this->stop_fd[0]){
                 // drain the pipe
                 char buf[100];
-                while (read(fd, buf, sizeof(buf) >0));  // keep draining the pipe
+                while (read(fd, buf, sizeof(buf)) > 0);  // keep draining the pipe
                 running = false;
                 break;
             }

@@ -8,6 +8,7 @@
 #include <sys/epoll.h>
 #include <string>
 #include <vector>
+#include <unordered_set>
 #include "handler/event_handler.h"
 #include "events/event_loop.h"
 
@@ -36,24 +37,25 @@ class RedisServer: public IEventHandler{
     static constexpr int DATA_BUFFER_SIZE {1000};
 
     int server_fd;
-    std::vector<int> replica_fds;
+    std::unordered_set<int> replica_fds;
+
+    EventLoop& event_loop;
+
+    sockaddr_in server_address{};    
+    epoll_event server_event{};
+    int server_port{};
 
     InMemoryStore storage;
     CommandHandler command_handler;
     RDBParser rdb_parser;
     std::unique_ptr<ReplicationManager> replication_manager;
-
-    sockaddr_in server_address{};    
-    epoll_event server_event{};
-    int server_port{};
     
     char data_buffer[DATA_BUFFER_SIZE];
-
-    EventLoop& event_loop;
 
     void handleNewConneciton();
     void handleClientData(int client_fd);
     bool sendResponse (int client_fd, const std::string& response_string);
+    int closeClient(int client_fd);
 
     public:
 

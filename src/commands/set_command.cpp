@@ -11,13 +11,23 @@ std::string SetCommand::execute(const std::vector<std::string> &tokens_vector, I
         std::transform(sub_command.begin(), sub_command.end(),
             sub_command.begin(), [](char c) { return std::toupper(c);});
 
+        long long time_ms;
+
+        try{
+            time_ms = std::stoll(tokens_vector[4]);
+            if (time_ms <= 0){
+                time_ms = 0;
+            }
+        }
+        catch (const std::exception &e){
+            std::cerr << "Error Executing Command: invalid time value" << std::endl;
+            return NOK;
+        }
         if (sub_command == "PX"){
-        auto time_ms = std::stoll(tokens_vector[4]);
         storage.setVariable(tokens_vector[1], tokens_vector[2], static_cast<std::chrono::milliseconds>(time_ms));
         return OK;
         }
         else if(sub_command == "EX"){
-        auto time_ms = std::stoll(tokens_vector[4]);
         storage.setVariable(tokens_vector[1], tokens_vector[2], static_cast<std::chrono::milliseconds>(time_ms)*1000);
         return OK;
         }

@@ -6,18 +6,19 @@
 #include <cerrno>
 #include <algorithm>
 #include <unordered_map>
+#include <unordered_set>
 #include "rdb/rdb_parser.h"
 #include <filesystem>
 
 RedisServer::RedisServer(EventLoop& loop, int port_number,const ServerConfig& rdb_fd):
+server_fd(-1),
+event_loop(loop),
+server_port(port_number),
 command_handler(this->storage, rdb_fd),
 rdb_parser(this->storage),
-server_fd(-1),
-server_port(port_number),
 socket_error(RedisServerSocketErrors::server_no_error),
 epoll_error(RedisServerEpollErrors::epoll_no_error),
-client_error(RedisServerClientErrors::client_no_error),
-event_loop(loop)
+client_error(RedisServerClientErrors::client_no_error)
 {
     
     if (rdb_fd.replication_info.role == "slave"){
@@ -103,9 +104,7 @@ bool RedisServer::startReplication()
         std::cerr << "Failed to initiate communication to master" << std::endl;
         return false;
     }
-    epoll_event master_event;
-    master_event.data.fd = master_fd;
-    master_event.events = EPOLLIN;
+
     event_loop.addFd(master_fd, EPOLLIN, this->replication_manager.get());
 
     replication_manager->startHandshake();
@@ -127,7 +126,7 @@ void RedisServer::handleNewConneciton()
         event_loop.addFd(client_fd, EPOLLIN, this);
         break;
     }
-}
+} 
 
 void RedisServer::handleClientData(int client_fd)
 {
@@ -136,20 +135,23 @@ void RedisServer::handleClientData(int client_fd)
     {
     case -1:
         std::cerr << "error occurred while recieving data from client" << std::endl;
-        event_loop.delFd(client_fd);
-        close(client_fd);
+        closeClient(client_fd);
         break;
     case 0:
         std::cerr << "client gracefully disconnected" << std::endl;
-        event_loop.delFd(client_fd);
-        close(client_fd);
+        closeClient(client_fd);
         break;
     default:
         std::vector<std::string> tokens = RespParser::dataParser(this->data_buffer, num_bytes);
         if (!tokens.empty())
         {
+            std::unordered_set<int> bad_clients;
+
             auto response = command_handler.executeCommand(tokens);
-            this->sendResponse(client_fd, response);
+            if (!(this->sendResponse(client_fd, response))){
+                // this is a bad client
+                bad_clients.insert(client_fd);
+            }
 
             auto cmd = tokens[0];
 
@@ -161,17 +163,26 @@ void RedisServer::handleClientData(int client_fd)
 
             if (cmd == "PSYNC"){
                 // this client is a replica. Add it to replica tracker
-                this->replica_fds.push_back(client_fd);
+                this->replica_fds.insert(client_fd);
                 std::string rdb_content = RDBParser::getEmptyRDB();
                 std::string rdb_response = "$" + std::to_string(rdb_content.length()) + "\r\n" + rdb_content;
-                this->sendResponse(client_fd, rdb_response);
+                if (!(this->sendResponse(client_fd, rdb_response))){
+                    // this replica died mid connection, so it is a bad replica
+                    bad_clients.insert(client_fd);
+                }
             }
 
             //propagate to all replicas
             if (this->command_handler.isWriteCommand(cmd)){
                 for (int replica_fd : this->replica_fds){
-                    this->sendResponse(replica_fd, std::string(this->data_buffer, num_bytes));
+                    if(!(this->sendResponse(replica_fd, std::string(this->data_buffer, num_bytes))))
+                    {
+                        bad_clients.insert(replica_fd);
+                    }
                 }
+            }
+            for (auto &bad_client : bad_clients){
+                closeClient(bad_client);
             }
         }
         break;
@@ -187,13 +198,9 @@ bool RedisServer::sendResponse(int client_fd, const std::string& response_string
         {
         case EPIPE:
             std::cerr << "Client already gracefully disconnected" << std::endl;
-            event_loop.delFd(client_fd);
-            close(client_fd);
             return false;
         case ECONNRESET:
             std::cerr << "Client forcefully disconnected" << std::endl;
-            event_loop.delFd(client_fd);
-            close(client_fd);
             return false;
         case EAGAIN: // or EWOULDBLOCK
             // The buffer is full. This is not an error.
@@ -203,19 +210,27 @@ bool RedisServer::sendResponse(int client_fd, const std::string& response_string
             return false;
         default:
             perror("Unexpected send error");
-            event_loop.delFd(client_fd);
-            close(client_fd);
             return false;
         }
     }
     return true;
 }
 
+int RedisServer::closeClient(int client_fd)
+{
+    event_loop.delFd(client_fd);
+    int ret_val = close(client_fd);
+
+    this->replica_fds.erase(client_fd);
+
+    return ret_val;
+}
+
 RedisServer::~RedisServer()
 {
     if (this->server_fd != -1)
     {
+        event_loop.delFd(this->server_fd);
         close(this->server_fd);
     }
-    event_loop.delFd(this->server_fd);
 }
